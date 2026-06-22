@@ -27,6 +27,7 @@ const DEFAULTS: CaseFile[] = Array.from({ length: 12 }).map((_, i) => ({
   location: "Gotham · with him",
   description:
     "Evidence collected on subject Vishu — overwhelming proof of greatest boyfriend status. Tap edit to add your own notes for this case.",
+  imageUrl: `/images/evidence/case-${String(i + 1).padStart(2, "0")}.svg`,
 }));
 
 export function EvidenceLocker() {

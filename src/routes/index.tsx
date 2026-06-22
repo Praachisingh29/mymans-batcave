@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BootSequence } from "@/components/batcave/BootSequence";
+import { AccessGate } from "@/components/batcave/AccessGate";
 import { HeroFile } from "@/components/batcave/HeroFile";
 import { StoryTimeline } from "@/components/batcave/StoryTimeline";
 import { EvidenceLocker } from "@/components/batcave/EvidenceLocker";
@@ -9,6 +10,7 @@ import { LoveAnalysis } from "@/components/batcave/LoveAnalysis";
 import { RoguesGallery } from "@/components/batcave/RoguesGallery";
 import { LetterToHero } from "@/components/batcave/LetterToHero";
 import { Achievements } from "@/components/batcave/Achievements";
+import { HappinessVault } from "@/components/batcave/HappinessVault";
 import { BirthdayRoom } from "@/components/batcave/BirthdayRoom";
 import { SecretEnding } from "@/components/batcave/SecretEnding";
 import { HiddenBats } from "@/components/batcave/HiddenBats";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const [authenticated, setAuthenticated] = useState(false);
   const [entered, setEntered] = useState(false);
   const [vaultDone, setVaultDone] = useState(false);
 
@@ -48,7 +51,9 @@ function Index() {
         <GothamSkyline className="h-[28vh]" />
       </div>
 
-      {!entered ? (
+      {!authenticated ? (
+        <AccessGate onAccessGranted={() => setAuthenticated(true)} />
+      ) : !entered ? (
         <BootSequence onEnter={() => setEntered(true)} />
       ) : (
         <div className="relative z-10">
@@ -70,6 +75,8 @@ function Index() {
           <Divider />
           <Achievements />
           <Divider />
+          <HappinessVault />
+          <Divider />
           <BirthdayRoom />
           <Divider />
           <SecretEnding unlocked={vaultDone} />
@@ -90,6 +97,7 @@ function TopBar() {
     ["Rogues", "rogues"],
     ["Letter", "letter"],
     ["Wins", "achievements"],
+    ["Happiness", "happiness-vault"],
     ["Birthday", "birthday"],
     ["Ending", "ending"],
   ];

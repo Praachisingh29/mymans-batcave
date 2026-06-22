@@ -14,13 +14,13 @@ const STORAGE_KEY = "batcave.rogues.v1";
 type Overrides = Record<number, Partial<Pick<Villain, "name" | "line" | "imageUrl">>>;
 
 const DEFAULTS: Villain[] = [
-  { id: 1, name: "Overthinking", line: "Silenced by his voice on the phone." },
-  { id: 2, name: "Bad Days", line: "Reversed by one of his hugs." },
-  { id: 3, name: "Loneliness", line: "Cannot exist when he's around." },
-  { id: 4, name: "Insecurity", line: "Looked in the mirror after he loved her." },
-  { id: 5, name: "Distance", line: "Shrinks every time he says 'I'm here.'" },
-  { id: 6, name: "Stress", line: "Dissolves on contact with him." },
-  { id: 7, name: "Anxiety", line: "Loses the fight whenever he smiles." },
+  { id: 1, name: "Overthinking", line: "Silenced by his voice on the phone.", imageUrl: "/images/rogues/villain-01.svg" },
+  { id: 2, name: "Bad Days", line: "Reversed by one of his hugs.", imageUrl: "/images/rogues/villain-02.svg" },
+  { id: 3, name: "Loneliness", line: "Cannot exist when he's around.", imageUrl: "/images/rogues/villain-03.svg" },
+  { id: 4, name: "Insecurity", line: "Looked in the mirror after he loved her.", imageUrl: "/images/rogues/villain-04.svg" },
+  { id: 5, name: "Distance", line: "Shrinks every time he says 'I'm here.'", imageUrl: "/images/rogues/villain-05.svg" },
+  { id: 6, name: "Stress", line: "Dissolves on contact with him.", imageUrl: "/images/rogues/villain-06.svg" },
+  { id: 7, name: "Anxiety", line: "Loses the fight whenever he smiles.", imageUrl: "/images/rogues/villain-07.svg" },
 ];
 
 export function RoguesGallery() {
