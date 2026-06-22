@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { SectionHeader } from "./SectionHeader";
+import { compressImageToDataURL, useLocalState } from "@/lib/editable";
 
 interface CaseFile {
   id: number;
@@ -10,56 +11,53 @@ interface CaseFile {
   imageUrl?: string;
 }
 
-const STORAGE_KEY = "batcave.evidence.images.v1";
+const STORAGE_KEY = "batcave.evidence.v2";
 
-const FILES: CaseFile[] = Array.from({ length: 12 }).map((_, i) => ({
+type Overrides = Record<
+  number,
+  Partial<Pick<CaseFile, "title" | "date" | "location" | "description" | "imageUrl">>
+>;
+
+const DEFAULTS: CaseFile[] = Array.from({ length: 12 }).map((_, i) => ({
   id: i + 1,
-  title: ["The Coffee Shop Stakeout", "Operation: Sunset Drive", "The Movie Night Heist", "Recon: Home Sweet Home", "The Long Walk Investigation", "Mission: First Kiss", "The Lazy Sunday File", "Operation: Surprise Hug", "The Late Night Calls Dossier", "Recon: His Smile, Up Close", "The Adventure Day Report", "Classified: Just Because"][i] || `Case ${i + 1}`,
+  title:
+    ["The Coffee Shop Stakeout", "Operation: Sunset Drive", "The Movie Night Heist", "Recon: Home Sweet Home", "The Long Walk Investigation", "Mission: First Kiss", "The Lazy Sunday File", "Operation: Surprise Hug", "The Late Night Calls Dossier", "Recon: His Smile, Up Close", "The Adventure Day Report", "Classified: Just Because"][i] ||
+    `Case ${i + 1}`,
   date: "—",
   location: "Gotham · with him",
   description:
-    "Evidence collected on subject Vishu — overwhelming proof of greatest boyfriend status. Upload a photo to seal this case file.",
+    "Evidence collected on subject Vishu — overwhelming proof of greatest boyfriend status. Tap edit to add your own notes for this case.",
 }));
 
-const MAX_DIM = 1400;
-const QUALITY = 0.85;
-
-async function compressImage(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", QUALITY);
-}
-
 export function EvidenceLocker() {
-  const [active, setActive] = useState<CaseFile | null>(null);
-  const [images, setImages] = useState<Record<number, string>>({});
+  const [overrides, setOverrides] = useLocalState<Overrides>(STORAGE_KEY, {});
+  const [active, setActive] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingIdRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setImages(JSON.parse(raw));
-    } catch {}
-  }, []);
+  const merged = (f: CaseFile): CaseFile => ({ ...f, ...overrides[f.id] });
+  const files = DEFAULTS.map(merged);
+  const activeFile = active != null ? files.find((f) => f.id === active) : null;
 
-  const persist = (next: Record<number, string>) => {
-    setImages(next);
+  const patch = (id: number, p: Overrides[number]) => {
+    const next: Overrides = { ...overrides, [id]: { ...overrides[id], ...p } };
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      setOverrides(next);
       setError(null);
     } catch {
       setError("Storage is full — try removing a photo first.");
     }
+  };
+
+  const removeImage = (id: number) => patch(id, { imageUrl: undefined });
+
+  const resetCase = (id: number) => {
+    const next = { ...overrides };
+    delete next[id];
+    setOverrides(next);
   };
 
   const pickFile = (id: number) => {
@@ -79,10 +77,8 @@ export function EvidenceLocker() {
     }
     try {
       setUploadingId(id);
-      const dataUrl = await compressImage(file);
-      const next = { ...images, [id]: dataUrl };
-      persist(next);
-      setActive((prev) => (prev && prev.id === id ? { ...prev, imageUrl: dataUrl } : prev));
+      const dataUrl = await compressImageToDataURL(file);
+      patch(id, { imageUrl: dataUrl });
     } catch {
       setError("Could not read that image. Try a different file.");
     } finally {
@@ -90,14 +86,7 @@ export function EvidenceLocker() {
     }
   };
 
-  const removeImage = (id: number) => {
-    const next = { ...images };
-    delete next[id];
-    persist(next);
-    setActive((prev) => (prev && prev.id === id ? { ...prev, imageUrl: undefined } : prev));
-  };
-
-  const merged = (f: CaseFile): CaseFile => ({ ...f, imageUrl: images[f.id] ?? f.imageUrl });
+  const uploadedCount = Object.values(overrides).filter((o) => o?.imageUrl).length;
 
   return (
     <section id="evidence" className="relative px-6 py-28 md:py-36 max-w-7xl mx-auto">
@@ -107,16 +96,10 @@ export function EvidenceLocker() {
         subtitle="Collected evidence proving Vishu is the greatest boyfriend alive."
       />
       <div className="mt-4 text-xs tracking-[0.3em] text-gold/60 font-[var(--font-mono-ui)]">
-        ACCESS LEVEL: WITNESS ONLY · TOTAL FILES: {FILES.length} · UPLOADED: {Object.keys(images).length}
+        ACCESS LEVEL: WITNESS ONLY · TOTAL FILES: {files.length} · UPLOADED: {uploadedCount}
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={onFileChange}
-      />
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
 
       {error && (
         <div className="mt-6 text-sm text-destructive border border-destructive/40 bg-destructive/10 rounded px-4 py-2">
@@ -125,8 +108,7 @@ export function EvidenceLocker() {
       )}
 
       <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {FILES.map((raw) => {
-          const f = merged(raw);
+        {files.map((f) => {
           const isUploading = uploadingId === f.id;
           return (
             <div
@@ -134,7 +116,7 @@ export function EvidenceLocker() {
               className="group glass-panel rounded-lg overflow-hidden text-left transition hover:-translate-y-1 hover:border-bat/50 hover:shadow-[0_0_30px_oklch(0.86_0.19_95_/_0.25)]"
             >
               <button
-                onClick={() => setActive(f)}
+                onClick={() => { setActive(f.id); setEditing(false); }}
                 className="block w-full text-left"
               >
                 <div className="relative aspect-[4/5] bg-gradient-to-br from-graphite to-charcoal flex items-center justify-center overflow-hidden">
@@ -166,20 +148,18 @@ export function EvidenceLocker() {
               </button>
               <div className="px-4 pb-4 flex gap-2">
                 <button
-                  onClick={(e) => { e.stopPropagation(); pickFile(f.id); }}
+                  onClick={() => pickFile(f.id)}
                   className="flex-1 text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-bat/40 text-bat/90 hover:bg-bat/10 hover:border-bat rounded py-2 transition"
                 >
                   {f.imageUrl ? "REPLACE" : "+ UPLOAD"}
                 </button>
-                {f.imageUrl && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); removeImage(f.id); }}
-                    className="text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-destructive/40 text-destructive/90 hover:bg-destructive/10 rounded py-2 px-3 transition"
-                    aria-label="Remove photo"
-                  >
-                    ✕
-                  </button>
-                )}
+                <button
+                  onClick={() => { setActive(f.id); setEditing(true); }}
+                  className="text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-gold/40 text-gold/90 hover:bg-gold/10 hover:border-gold rounded py-2 px-3 transition"
+                  aria-label="Edit case file"
+                >
+                  ✎
+                </button>
               </div>
             </div>
           );
@@ -187,36 +167,46 @@ export function EvidenceLocker() {
       </div>
 
       <p className="mt-10 text-xs text-muted-foreground italic text-center">
-        Photos are saved privately in this browser only. Use the same browser to keep your evidence locked in.
+        Photos & notes are saved privately in this browser. Use the same browser to keep your evidence locked in.
       </p>
 
-      {active && (
+      {activeFile && (
         <div
           className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-up"
-          onClick={() => setActive(null)}
+          onClick={() => { setActive(null); setEditing(false); }}
         >
           <div
-            className="hologram rounded-xl max-w-3xl w-full p-6 md:p-10 relative"
+            className="hologram rounded-xl max-w-3xl w-full p-6 md:p-10 relative max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setActive(null)}
+              onClick={() => { setActive(null); setEditing(false); }}
               className="absolute top-4 right-4 text-bat/70 hover:text-bat text-2xl"
               aria-label="Close"
             >
               ✕
             </button>
             <div className="text-xs tracking-[0.3em] text-gold/70 font-[var(--font-mono-ui)]">
-              CASE FILE #{String(active.id).padStart(3, "0")}
+              CASE FILE #{String(activeFile.id).padStart(3, "0")}
             </div>
-            <h3 className="font-[var(--font-display)] text-3xl md:text-4xl text-bat mt-2">{active.title}</h3>
+
+            {editing ? (
+              <input
+                value={activeFile.title}
+                onChange={(e) => patch(activeFile.id, { title: e.target.value })}
+                className="mt-2 w-full bg-transparent border-b border-bat/30 focus:border-bat outline-none font-[var(--font-display)] text-3xl md:text-4xl text-bat"
+              />
+            ) : (
+              <h3 className="font-[var(--font-display)] text-3xl md:text-4xl text-bat mt-2">{activeFile.title}</h3>
+            )}
+
             <div className="grid md:grid-cols-2 gap-6 mt-6">
               <div className="aspect-square bg-graphite rounded border border-gold/20 flex items-center justify-center text-bat/40 text-sm overflow-hidden">
-                {active.imageUrl ? (
-                  <img src={active.imageUrl} alt={active.title} className="w-full h-full object-cover" />
+                {activeFile.imageUrl ? (
+                  <img src={activeFile.imageUrl} alt={activeFile.title} className="w-full h-full object-cover" />
                 ) : (
                   <button
-                    onClick={() => pickFile(active.id)}
+                    onClick={() => pickFile(activeFile.id)}
                     className="w-full h-full flex flex-col items-center justify-center gap-2 text-bat/60 hover:text-bat hover:bg-bat/5 transition"
                   >
                     <span className="text-3xl">＋</span>
@@ -225,24 +215,71 @@ export function EvidenceLocker() {
                 )}
               </div>
               <div className="space-y-3 text-sm">
-                <div><span className="text-gold/60 tracking-widest text-xs">DATE: </span>{active.date}</div>
-                <div><span className="text-gold/60 tracking-widest text-xs">LOCATION: </span>{active.location}</div>
-                <div className="pt-3 border-t border-gold/20 text-foreground/90 leading-relaxed">{active.description}</div>
-                <div className="pt-3 flex gap-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-gold/60 tracking-widest text-xs">DATE:</span>
+                  {editing ? (
+                    <input
+                      value={activeFile.date}
+                      onChange={(e) => patch(activeFile.id, { date: e.target.value })}
+                      className="flex-1 bg-transparent border-b border-bat/20 focus:border-bat outline-none text-foreground"
+                      placeholder="e.g. June 22, 2026"
+                    />
+                  ) : (
+                    <span>{activeFile.date}</span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-gold/60 tracking-widest text-xs">LOCATION:</span>
+                  {editing ? (
+                    <input
+                      value={activeFile.location}
+                      onChange={(e) => patch(activeFile.id, { location: e.target.value })}
+                      className="flex-1 bg-transparent border-b border-bat/20 focus:border-bat outline-none text-foreground"
+                    />
+                  ) : (
+                    <span>{activeFile.location}</span>
+                  )}
+                </div>
+                <div className="pt-3 border-t border-gold/20 text-foreground/90 leading-relaxed">
+                  {editing ? (
+                    <textarea
+                      value={activeFile.description}
+                      onChange={(e) => patch(activeFile.id, { description: e.target.value })}
+                      rows={6}
+                      className="w-full bg-black/30 border border-bat/20 focus:border-bat outline-none rounded p-3 text-foreground resize-y"
+                    />
+                  ) : (
+                    activeFile.description
+                  )}
+                </div>
+
+                <div className="pt-3 flex flex-wrap gap-2">
                   <button
-                    onClick={() => pickFile(active.id)}
-                    className="flex-1 text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-bat/40 text-bat/90 hover:bg-bat/10 hover:border-bat rounded py-2 transition"
+                    onClick={() => pickFile(activeFile.id)}
+                    className="text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-bat/40 text-bat/90 hover:bg-bat/10 hover:border-bat rounded py-2 px-3 transition"
                   >
-                    {active.imageUrl ? "REPLACE PHOTO" : "+ UPLOAD PHOTO"}
+                    {activeFile.imageUrl ? "REPLACE PHOTO" : "+ PHOTO"}
                   </button>
-                  {active.imageUrl && (
+                  {activeFile.imageUrl && (
                     <button
-                      onClick={() => removeImage(active.id)}
+                      onClick={() => removeImage(activeFile.id)}
                       className="text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-destructive/40 text-destructive/90 hover:bg-destructive/10 rounded py-2 px-3 transition"
                     >
-                      REMOVE
+                      REMOVE PHOTO
                     </button>
                   )}
+                  <button
+                    onClick={() => setEditing((v) => !v)}
+                    className="text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-gold/40 text-gold/90 hover:bg-gold/10 hover:border-gold rounded py-2 px-3 transition"
+                  >
+                    {editing ? "DONE" : "✎ EDIT TEXT"}
+                  </button>
+                  <button
+                    onClick={() => resetCase(activeFile.id)}
+                    className="text-[10px] tracking-[0.25em] font-[var(--font-mono-ui)] border border-muted-foreground/30 text-muted-foreground hover:bg-muted/10 rounded py-2 px-3 transition"
+                  >
+                    RESET
+                  </button>
                 </div>
               </div>
             </div>
