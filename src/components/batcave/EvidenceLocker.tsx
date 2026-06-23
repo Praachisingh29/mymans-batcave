@@ -18,16 +18,52 @@ type Overrides = Record<
   Partial<Pick<CaseFile, "title" | "date" | "location" | "description" | "imageUrl">>
 >;
 
-const DEFAULTS: CaseFile[] = Array.from({ length: 12 }).map((_, i) => ({
+const DEFAULTS: CaseFile[] = Array.from({ length: 36 }).map((_, i) => ({
   id: i + 1,
   title:
-    ["The Coffee Shop Stakeout", "Operation: Sunset Drive", "The Movie Night Heist", "Recon: Home Sweet Home", "The Long Walk Investigation", "Mission: First Kiss", "The Lazy Sunday File", "Operation: Surprise Hug", "The Late Night Calls Dossier", "Recon: His Smile, Up Close", "The Adventure Day Report", "Classified: Just Because"][i] ||
-    `Case ${i + 1}`,
+    [
+      "Your first pfp of insta",
+      "The first pic for which i fell",
+      "My god look at those hot built body",
+      "Your first gym pic (hottttttt)",
+      "First pic of us together",
+      "Second pic of us together",
+      "I love these veins",
+      "I wonnnnnnnnn",
+      "6 packs alert",
+      "Uffff  Those biceps & triceps",
+      "My first bday w you",
+      "Here comes hot vishwa again",
+      "Nonveg date shuuuuuuu",
+      "First time visited home.",
+      "Our cutest pic together",
+      "Look at that damn sexy back man.",
+      "Selfie in lights of dj",
+      "Don Mr & Mrs sonar",
+      "Traditional coded.",
+      "Specs, earpods & body .",
+      "Bullying me",
+      "My cutie bby vishu",
+      "Calling to hug me definitely",
+      "Myyyy favvvv piccccc... exctly describing us",
+      "I love South indian vishu more.",
+      "Us being us",
+      "Againnn hot vishuuuu.",
+      "These biceps are gona kill me",
+      "Vishuuu here hot againnnnn",
+      "This superb back",
+      "Our AI generated babies.",
+      "This pic has my whole heart.",
+      "Black & white back",
+      "Our first isckon visit",
+      "Me trying to match ur height.",
+      "I love him somuch."
+    ][i] || `Case File #${String(i + 1).padStart(3, "0")}`,
   date: "—",
   location: "Gotham · with him",
   description:
     "Evidence collected on subject Vishu — overwhelming proof of greatest boyfriend status. Tap edit to add your own notes for this case.",
-  imageUrl: `/images/evidence/case-${String(i + 1).padStart(2, "0")}.svg`,
+  imageUrl: `/images/evidence/case-${String(i + 1).padStart(2, "0")}.jpeg`,
 }));
 
 export function EvidenceLocker() {
