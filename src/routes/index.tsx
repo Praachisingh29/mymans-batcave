@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { BootSequence } from "@/components/batcave/BootSequence";
 import { AccessGate } from "@/components/batcave/AccessGate";
 import { HeroFile } from "@/components/batcave/HeroFile";
@@ -81,6 +81,7 @@ function Index() {
           <Divider />
           <SecretEnding unlocked={vaultDone} />
           <Footer />
+          <MusicPlayer />
         </div>
       )}
     </main>
@@ -143,5 +144,102 @@ function Footer() {
       </div>
       <div className="mt-3 text-bat/40">END OF FILE</div>
     </footer>
+  );
+}
+
+function MusicPlayer() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playlist = [
+    "/audio/tum_se_hi_flute.mp3",
+    "/audio/tum_se_hi_instrument.mp3"
+  ];
+
+  const handleToggle = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error("Audio play failed:", err);
+      });
+    }
+  };
+
+  const handleEnded = () => {
+    const nextIndex = (trackIndex + 1) % playlist.length;
+    setTrackIndex(nextIndex);
+  };
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.src = playlist[trackIndex];
+      if (isPlaying) {
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(() => {
+          setIsPlaying(false);
+        });
+      }
+    }
+  }, [trackIndex]);
+
+  // Attempt to autoplay once when component mounts and user has interacted
+  useEffect(() => {
+    const playAttempt = setTimeout(() => {
+      if (audioRef.current && !isPlaying) {
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(() => {
+          // Silent catch since browsers block autoplay until click
+        });
+      }
+    }, 1000);
+    return () => clearTimeout(playAttempt);
+  }, []);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-black/85 backdrop-blur-md border border-gold/30 rounded-full px-5 py-2 text-gold shadow-lg font-[var(--font-mono-ui)] text-[10px] tracking-widest md:text-xs">
+      <audio
+        ref={audioRef}
+        src={playlist[trackIndex]}
+        onEnded={handleEnded}
+        preload="auto"
+      />
+      
+      {/* Playing state visualizer */}
+      {isPlaying ? (
+        <div className="flex items-end gap-0.5 h-3 w-4 shrink-0">
+          <span className="bg-bat w-0.5 h-2 animate-audio-bar-1" />
+          <span className="bg-bat w-0.5 h-3 animate-audio-bar-2" />
+          <span className="bg-bat w-0.5 h-1 animate-audio-bar-3" />
+          <span className="bg-bat w-0.5 h-2 animate-audio-bar-4" />
+        </div>
+      ) : (
+        <div className="flex items-end gap-0.5 h-3 w-4 shrink-0">
+          <span className="bg-gold/30 w-0.5 h-1.5" />
+          <span className="bg-gold/30 w-0.5 h-1" />
+          <span className="bg-gold/30 w-0.5 h-2" />
+          <span className="bg-gold/30 w-0.5 h-1" />
+        </div>
+      )}
+
+      <span className="uppercase text-[9px] md:text-[11px] truncate max-w-[120px] md:max-w-none">
+        Tum Se Hi ({trackIndex === 0 ? "Flute" : "Instrument"})
+      </span>
+
+      <button
+        onClick={handleToggle}
+        className="w-7 h-7 rounded-full bg-gold/10 hover:bg-gold/25 border border-gold/40 flex items-center justify-center text-xs transition cursor-pointer shrink-0"
+        aria-label={isPlaying ? "Pause music" : "Play music"}
+      >
+        {isPlaying ? "⏸" : "▶"}
+      </button>
+    </div>
   );
 }

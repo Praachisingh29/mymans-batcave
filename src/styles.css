@@ -211,3 +211,47 @@
 @utility animate-flicker { animation: flicker 4s infinite; }
 @utility animate-capsule-glow { animation: capsule-glow 3s ease-in-out infinite; }
 @utility animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+/* Custom Audio Player Animations */
+@keyframes audio-bar-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+@keyframes audio-bar-2 {
+  0%, 100% { height: 12px; }
+  50% { height: 6px; }
+}
+@keyframes audio-bar-3 {
+  0%, 100% { height: 6px; }
+  50% { height: 14px; }
+}
+@keyframes audio-bar-4 {
+  0%, 100% { height: 8px; }
+  50% { height: 4px; }
+}
+
+@utility animate-audio-bar-1 { animation: audio-bar-1 1.2s ease-in-out infinite; }
+@utility animate-audio-bar-2 { animation: audio-bar-2 0.8s ease-in-out infinite; }
+@utility animate-audio-bar-3 { animation: audio-bar-3 1.0s ease-in-out infinite; }
+@utility animate-audio-bar-4 { animation: audio-bar-4 0.7s ease-in-out infinite; }
+
+/* Custom Wax Seal and Candle Animations */
+@keyframes smoke-fade {
+  0% { transform: translateY(0) scale(0.8); opacity: 0.6; }
+  100% { transform: translateY(-45px) scale(1.6); opacity: 0; }
+}
+
+@utility animate-smoke-fade {
+  animation: smoke-fade 1.5s ease-out forwards;
+}
+
+@keyframes break-seal {
+  0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  40% { transform: translate(-50%, -50%) scale(1.15) rotate(8deg); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(0.5) rotate(-25deg); opacity: 0; }
+}
+
+@utility animate-break-seal {
+  animation: break-seal 0.6s ease-in-out forwards;
+}
+

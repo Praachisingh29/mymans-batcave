@@ -3,6 +3,8 @@ import { SectionHeader } from "./SectionHeader";
 
 export function BirthdayRoom() {
   const [confetti, setConfetti] = useState(0);
+  const [candleLit, setCandleLit] = useState(true);
+
   const pieces = useMemo(() => {
     if (!confetti) return [];
     return Array.from({ length: 80 }).map((_, i) => ({
@@ -16,12 +18,19 @@ export function BirthdayRoom() {
     }));
   }, [confetti]);
 
+  const handleCakeClick = () => {
+    if (candleLit) {
+      setCandleLit(false);
+      setConfetti((c) => c + 1);
+    }
+  };
+
   return (
     <section id="birthday" className="relative px-6 py-28 md:py-36 max-w-6xl mx-auto">
       <SectionHeader
         kicker="Section 10"
         title="Birthday Celebration Room"
-        subtitle="Cake. Bats. Fireworks. Just press the button."
+        subtitle={candleLit ? "Make a wish and blow out the candle!" : "Your wish has been cast into the night!"}
         center
       />
 
@@ -42,21 +51,46 @@ export function BirthdayRoom() {
         ))}
 
         {/* cake */}
-        <div className="relative inline-block">
-          <div className="text-7xl md:text-8xl animate-flicker">🎂</div>
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1 h-6 bg-bat rounded-full shadow-[0_0_20px_var(--bat)]" />
+        <div 
+          onClick={handleCakeClick} 
+          className="relative inline-block cursor-pointer group select-none mb-4"
+        >
+          <div className="text-7xl md:text-8xl group-hover:scale-105 transition-transform duration-300">🎂</div>
+          {candleLit ? (
+            <>
+              {/* Flame overlay */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-2xl animate-pulse">🔥</div>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-orange-400/40 blur-sm animate-flicker" />
+            </>
+          ) : (
+            /* Smoke overlay */
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl animate-smoke-fade pointer-events-none">
+              💨
+            </div>
+          )}
         </div>
 
         <h3 className="mt-8 font-[var(--font-display)] text-4xl md:text-6xl text-gold text-glow">
           HAPPY 23<sup>RD</sup> BIRTHDAY VISHU
         </h3>
-        <p className="mt-4 text-muted-foreground italic">May Gotham bow, and may every wish you whisper come true.</p>
+        
+        <p className="mt-4 text-muted-foreground italic max-w-xl mx-auto min-h-[24px]">
+          {candleLit ? (
+            <span className="animate-pulse text-gold/80 font-[var(--font-mono-ui)] text-xs tracking-widest">
+              🎂 TAP THE CAKE TO BLOW OUT THE CANDLE AND MAKE A WISH...
+            </span>
+          ) : (
+            <span className="text-bat font-[var(--font-mono-ui)] text-xs tracking-widest">
+              🌌 YOUR WISH HAS BEEN SENT TO GOTHAM'S NIGHT SKY. MAY EVERY DREAM COME TRUE!
+            </span>
+          )}
+        </p>
 
         <button
           onClick={() => setConfetti((c) => c + 1)}
           className="bat-button mt-10 hover:[&]:bat-button-hover"
         >
-          🎆 Launch Fireworks
+          🎆 {candleLit ? "Launch Fireworks" : "Launch More Fireworks"}
         </button>
 
         {/* confetti */}
